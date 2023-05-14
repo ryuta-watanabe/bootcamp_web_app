@@ -1,6 +1,6 @@
-import {User} from "@prisma/client";
-import {type PostWithUser} from "@/models/post";
 import {databaseManager} from "@/db/index";
+import {type PostWithUser} from "@/models/post";
+import {User} from "@prisma/client";
 
 type UserProfileData = Partial<Pick<User, "name" | "email" | "imageName">>;
 type UserData = Pick<User, "name" | "email" | "password">;
@@ -38,11 +38,16 @@ export const updateUserProfile = async (
   return user;
 };
 
-export const getUserWithPosts = async (
+export const getUserWithPostsIncludeRetweets = async (
   userId: number
 ): Promise<
   | (UserWithoutPassword & {
       posts: PostWithUser[];
+      retweets: Array<{
+        post: PostWithUser;
+        user: UserWithoutPassword;
+        createdAt: Date;
+      }>;
     })
   | null
 > => {
@@ -68,6 +73,30 @@ export const getUserWithPosts = async (
               ...selectUserColumnsWithoutPassword,
             },
           },
+        },
+      },
+      retweets: {
+        select: {
+          post: {
+            select: {
+              id: true,
+              content: true,
+              userId: true,
+              createdAt: true,
+              updatedAt: true,
+              user: {
+                select: {
+                  ...selectUserColumnsWithoutPassword,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              ...selectUserColumnsWithoutPassword,
+            },
+          },
+          createdAt: true,
         },
       },
     },

@@ -1,23 +1,23 @@
-import express, {RequestHandler} from "express";
-import {join} from "node:path";
-import multer from "multer";
-import {nanoid} from "nanoid";
+import {HashPassword} from "@/lib/hash_password";
 import {
-  getAllUsers,
-  createUser,
-  getUserWithPosts,
-  getUserLikedPosts,
-  getUser,
-  updateUserProfile,
-} from "@/models/user";
-import {
-  isUniqueEmail,
   ensureAuthUser,
   forbidAuthUser,
+  isUniqueEmail,
 } from "@/middlewares/authentication";
 import {ensureCorrectUser} from "@/middlewares/current_user";
+import {getuserTimeline} from "@/models/timeline";
+import {
+  createUser,
+  getAllUsers,
+  getUser,
+  getUserLikedPosts,
+  updateUserProfile,
+} from "@/models/user";
+import express, {RequestHandler} from "express";
 import {body, validationResult} from "express-validator";
-import {HashPassword} from "@/lib/hash_password";
+import multer from "multer";
+import {nanoid} from "nanoid";
+import {join} from "node:path";
 
 export const userRouter = express.Router();
 
@@ -61,10 +61,15 @@ userRouter.post(
 /** A page to show user details */
 userRouter.get("/:userId", ensureAuthUser, async (req, res, next) => {
   const {userId} = req.params;
-  const user = await getUserWithPosts(Number(userId));
-  if (!user) return next(new Error("Invalid error: The user is undefined."));
+  const userTimeline = await getuserTimeline(Number(userId));
+  if (!userTimeline)
+    return next(new Error("Invalid error: The user is undefined."));
+
+  const {user, timeline} = userTimeline;
+
   res.render("users/show", {
     user,
+    timeline,
   });
 });
 
