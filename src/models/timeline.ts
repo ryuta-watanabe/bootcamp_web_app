@@ -1,4 +1,5 @@
-import {PostWithUser} from "@/models/post";
+import {PostWithUser, getAllPosts} from "@/models/post";
+import {getAllRetweets} from "./retweet";
 import {UserWithoutPassword, getUserWithPostsIncludeRetweets} from "./user";
 
 type TweetType = "post" | "retweet" | "like";
@@ -35,4 +36,29 @@ export const getuserTimeline = async (
     );
   timeline.sort((a, b) => b.activityAt.getTime() - a.activityAt.getTime());
   return {user, timeline};
+};
+
+export const getAllTimeline = async (): Promise<Timeline[]> => {
+  const allPosts = await getAllPosts();
+  const allRetweets = await getAllRetweets();
+  const timeline: Timeline[] = allPosts
+    .map(
+      (post): Timeline => ({
+        type: "post" as const,
+        post,
+        user: post.user,
+        activityAt: post.createdAt,
+      })
+    )
+    .concat(
+      allRetweets.map(retweet => ({
+        type: "retweet" as const,
+        post: retweet.post,
+        user: retweet.user,
+        activityAt: retweet.createdAt,
+      }))
+    );
+  timeline.sort((a, b) => b.activityAt.getTime() - a.activityAt.getTime());
+
+  return timeline;
 };
